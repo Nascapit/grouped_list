@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/widgets.dart';
+import 'dart:math' as math;
 
 import 'src/grouped_list_order.dart';
 
@@ -67,6 +69,11 @@ class SliverGroupedListView<T, E> extends StatefulWidget {
   /// Widget at the end of the list
   final Widget? footer;
 
+  final ScrollController? controller;
+  final bool useStickyGroupSeparators;
+
+  final StreamController<int>? streamController;
+
   /// Creates a [SliverGroupedListView]
   const SliverGroupedListView({
     super.key,
@@ -81,6 +88,9 @@ class SliverGroupedListView<T, E> extends StatefulWidget {
     this.order = GroupedListOrder.ASC,
     this.sort = true,
     this.separator = const SizedBox.shrink(),
+    this.controller,
+    this.useStickyGroupSeparators = false,
+    this.streamController,
     this.footer,
   })  : assert(itemBuilder != null || indexedItemBuilder != null),
         assert(groupSeparatorBuilder != null || groupHeaderBuilder != null);
@@ -93,6 +103,25 @@ class _SliverGroupedListViewState<T, E>
     extends State<SliverGroupedListView<T, E>> {
   final LinkedHashMap<String, GlobalKey> _keys = LinkedHashMap();
   List<T> _sortedElements = [];
+
+  late final StreamController<int> _streamController;
+
+  final GlobalKey _key = GlobalKey();
+  late final ScrollController _controller;
+  GlobalKey? _groupHeaderKey;
+  int _topElementIndex = 0;
+  RenderBox? _headerBox;
+  RenderBox? _listBox;
+
+  @override
+  void initState() {
+    _streamController = widget.streamController ?? StreamController<int>();
+    _controller = widget.controller ?? ScrollController();
+    if (widget.useStickyGroupSeparators) {
+      _controller.addListener(_scrollListener);
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +159,53 @@ class _SliverGroupedListViewState<T, E>
         },
       ),
     );
+  }
+
+  void _scrollListener() {
+    if (_sortedElements.isEmpty) {
+      return;
+    }
+
+    _listBox ??= _key.currentContext?.findRenderObject() as RenderBox?;
+    var listPos = _listBox?.localToGlobal(Offset.zero).dy ?? 0;
+    _headerBox ??=
+    _groupHeaderKey?.currentContext?.findRenderObject() as RenderBox?;
+    var headerHeight = _headerBox?.size.height ?? 0;
+    var max = double.negativeInfinity;
+    var topItemKey = '0';// widget.reverse ? '${_sortedElements.length - 1}' : '0';
+    for (var entry in _keys.entries) {
+      var key = entry.value;
+      if (_isListItemRendered(key)) {
+        var itemBox = key.currentContext!.findRenderObject() as RenderBox;
+        // position of the item's top border inside the list view
+        var y = itemBox.localToGlobal(Offset(0, -listPos - headerHeight)).dy;
+        if (y <= headerHeight && y > max) {
+          topItemKey = entry.key;
+          max = y;
+        }
+      }
+    }
+    var index = math.max(int.parse(topItemKey), 0);
+    if (index != _topElementIndex) {
+      var curr = widget.groupBy(_sortedElements[index]);
+      E prev;
+
+      try {
+        prev = widget.groupBy(_sortedElements[_topElementIndex]);
+      } on RangeError catch (_) {
+        prev = widget.groupBy(_sortedElements[0]);
+      }
+
+      if (prev != curr) {
+        _topElementIndex = index;
+        _streamController.add(_topElementIndex);
+      }
+    }
+  }
+
+  bool _isListItemRendered(GlobalKey<State<StatefulWidget>> key) {
+    return key.currentContext != null &&
+        key.currentContext!.findRenderObject() != null;
   }
 
   Container _buildItem(context, int actualIndex) {
