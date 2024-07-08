@@ -10,6 +10,12 @@ List _elements = [
   {'name': 'Miranda', 'group': 'Team B'},
   {'name': 'Mike', 'group': 'Team C'},
   {'name': 'Danny', 'group': 'Team C'},
+  {'name': 'Mike', 'group': 'Team C'},
+  {'name': 'Danny', 'group': 'Team C'},
+  {'name': 'Mike', 'group': 'Team C'},
+  {'name': 'Danny', 'group': 'Team C'},
+  {'name': 'Mike', 'group': 'Team C'},
+  {'name': 'Danny', 'group': 'Team C'},
 ];
 
 class MyApp extends StatelessWidget {
@@ -33,6 +39,22 @@ class MyApp extends StatelessWidget {
   }
 
   _createGroupedListView() {
+
+    List _elements = [
+      {'name': 'John', 'group': 'Team A'},
+      {'name': 'Will', 'group': 'Team B'},
+      {'name': 'Beth', 'group': 'Team A'},
+      {'name': 'Miranda', 'group': 'Team B'},
+      {'name': 'Mike', 'group': 'Team C'},
+      {'name': 'Danny', 'group': 'Team C'},
+      {'name': 'Mike', 'group': 'Team C'},
+      {'name': 'Danny', 'group': 'Team C'},
+      {'name': 'Mike', 'group': 'Team C'},
+      {'name': 'Danny', 'group': 'Team C'},
+      {'name': 'Mike', 'group': 'Team C'},
+      {'name': 'Danny', 'group': 'Team C'},
+    ];
+
     return GroupedListView<dynamic, String>(
       elements: _elements,
       groupBy: (element) => element['group'],
