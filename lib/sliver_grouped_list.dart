@@ -72,7 +72,7 @@ class SliverGroupedListView<T, E> extends StatefulWidget {
   final ScrollController? controller;
   final bool useStickyGroupSeparators;
 
-  final StreamController<int>? streamController;
+  final StreamController<GroupedListItem<T>>? streamController;
 
   /// Creates a [SliverGroupedListView]
   const SliverGroupedListView({
@@ -104,7 +104,7 @@ class _SliverGroupedListViewState<T, E>
   final LinkedHashMap<String, GlobalKey> _keys = LinkedHashMap();
   List<T> _sortedElements = [];
 
-  late final StreamController<int> _streamController;
+  late final StreamController<GroupedListItem<T>>? _streamController;
 
   final GlobalKey _key = GlobalKey();
   late final ScrollController _controller;
@@ -115,9 +115,9 @@ class _SliverGroupedListViewState<T, E>
 
   @override
   void initState() {
-    _streamController = widget.streamController ?? StreamController<int>();
+    _streamController = widget.streamController;
     _controller = widget.controller ?? ScrollController();
-    if (widget.useStickyGroupSeparators) {
+    if (widget.useStickyGroupSeparators && widget.streamController != null) {
       _controller.addListener(_scrollListener);
     }
     super.initState();
@@ -198,7 +198,7 @@ class _SliverGroupedListViewState<T, E>
 
       if (prev != curr) {
         _topElementIndex = index;
-        _streamController.add(_topElementIndex);
+        _streamController?.add(GroupedListItem(_topElementIndex, _sortedElements[_topElementIndex]));
       }
     }
   }
@@ -255,4 +255,11 @@ class _SliverGroupedListViewState<T, E>
     }
     return widget.groupHeaderBuilder!(element);
   }
+}
+
+class GroupedListItem<T> {
+  const GroupedListItem(this.index, this.data);
+
+  final int index;
+  final T data;
 }
